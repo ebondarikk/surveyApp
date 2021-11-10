@@ -1,0 +1,83 @@
+version: "3.4"
+
+x-base: &base
+  image: survey/api:latest
+  build:
+    context: .
+  volumes:
+    - ./:/var/www/survey
+
+
+x-vars: &vars
+  DATABASE_URL: postgres://postgres:admin@db:5432/survey
+
+x-command: &command
+  <<: *base
+  environment:
+    <<: *vars
+
+
+services:
+  db:
+    container_name: survey-db
+    image: postgres:11-alpine
+    command:
+      - -c
+      - fsync=off
+      - -c
+      - synchronous_commit=off
+      - -c
+      - full_page_writes=off
+      - -c
+      - checkpoint_timeout=3600
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: survey
+      POSTGRES_INITDB_ARGS: --no-locale
+    volumes:
+      - survey-db:/var/lib/postgresql/data
+    restart: on-failure
+
+  createsuperuser:
+    container_name: survey-createglobaladmin
+    <<: *command
+    command:
+      - createsuperuser
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: on-failure
+
+  migrate:
+    container_name: survey-migrate
+    <<: *command
+    command:
+      - migrate
+    depends_on:
+      - db
+    restart: on-failure
+
+
+  api:
+    <<: *base
+    container_name: survey-api
+    tty: true
+    environment:
+      <<: *vars
+    restart: unless-stopped
+    command:
+      - runserver
+      - 0.0.0.0:8000
+    ports:
+      - 8000:8000
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_started
+
+volumes:
+  survey-db:
