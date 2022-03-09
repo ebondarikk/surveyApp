@@ -7,7 +7,7 @@ while ! nc -z survey-db 5432; do
   echo "waiting for postgres listening..."
   sleep 1
 done
-echo "PostgreSQL started"
+echo "PostgreSQL strted"
 
 ACTION=$1
 
