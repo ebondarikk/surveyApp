@@ -2,7 +2,7 @@
 
 set -e
 
-echo "Waiting for postgres to get up and running..."
+echo "Waiing for postgres to get up and running..."
 while ! nc -z survey-db 5432; do
   echo "waiting for postgres listening..."
   sleep 1
